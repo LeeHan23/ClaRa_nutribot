@@ -1,0 +1,41 @@
+# Web Framework & API
+flask==3.0.0
+fastapi==0.109.0
+uvicorn==0.27.0
+
+# WhatsApp Integration
+twilio==8.11.0
+
+# LangChain & Agentic Framework
+langgraph==0.2.0
+langchain==0.2.16
+langchain-core==0.2.38
+langchain-community==0.2.16
+langchain-openai==0.1.23
+
+# Database
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# LLM & Transformers
+transformers==4.36.0
+torch==2.1.2
+sentence-transformers==2.2.2
+
+# PDF Processing
+pypdf==3.17.4
+pdfplumber==0.10.3
+
+# Utilities
+python-dotenv==1.0.0
+asyncio==3.4.3
+aiohttp==3.9.1
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Vector Store & Embeddings
+faiss-cpu==1.7.4
+chromadb==0.4.22
+
+# Logging & Monitoring
+loguru==0.7.2
