@@ -27,6 +27,7 @@ NutriBot is a proprietary, agentic medical RAG system that acts as a Clinical Di
 
 ## Architecture
 ```
+mermaid
 graph TD
     %% STYLING
     classDef external fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5;
@@ -49,7 +50,7 @@ graph TD
     end
 
     %% ZONE 3: COGNITIVE ORCHESTRATOR
-    subgraph Zone3_Agent [🧠 Zone 3: Agentic Brain (LangGraph)]
+    subgraph Zone3_Agent [🧠 Zone 3: Agentic Brain - LangGraph]
         CleanInput --> Router{Check Profile Status}
         
         Router -- "Incomplete" --> Nurse[👩‍⚕️ Nurse Node]
