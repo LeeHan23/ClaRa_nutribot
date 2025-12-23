@@ -26,38 +26,62 @@ NutriBot is a proprietary, agentic medical RAG system that acts as a Clinical Di
 - Profiling status tracking (IN_PROGRESS, COMPLETE)
 
 ## Architecture
+graph TD
+    %% STYLING
+    classDef external fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5;
+    classDef server fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef agent fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef knowledge fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
 
-```
-┌─────────────────┐
-│  WhatsApp User  │
-└────────┬────────┘
-         │ (Twilio Webhook)
-         ▼
-┌─────────────────────────┐
-│   MessageBuffer         │
-│   (3s Debounce)         │
-└────────┬────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   LangGraph Agent       │
-│   ┌─────────────────┐   │
-│   │  Intake Nurse   │   │
-│   └────────┬────────┘   │
-│            │            │
-│   ┌────────▼────────┐   │
-│   │   Dietitian     │   │
-│   └────────┬────────┘   │
-└────────────┼────────────┘
-             │
-    ┌────────┴────────┐
-    │                 │
-    ▼                 ▼
-┌─────────┐   ┌──────────────┐
-│ Patient │   │ CLaRa Engine │
-│   DB    │   │  (Retriever) │
-└─────────┘   └──────────────┘
-```
+    %% ZONE 1: EXTERNAL INTERFACE
+    subgraph Zone1_Interaction [📱 Zone 1: Interaction Layer]
+        User((Patient)) -->|Sends multiple short texts| WA[WhatsApp / Twilio]
+        WA -->|Webhook POST| Webhook
+    end
+
+    %% ZONE 2: INGRESS & FLUIDITY
+    subgraph Zone2_Server [⚙️ Zone 2: The Gateway]
+        Webhook[Flask Server] -->|Raw Stream| Buffer
+        Buffer{Message Debouncer}
+        Buffer -- Wait 3s --> Buffer
+        Buffer -->|Timeout: Aggregate Texts| CleanInput[/"Merged User Query"/]
+    end
+
+    %% ZONE 3: COGNITIVE ORCHESTRATOR
+    subgraph Zone3_Agent [🧠 Zone 3: Agentic Brain (LangGraph)]
+        CleanInput --> Router{Check Profile Status}
+        
+        Router -- "Incomplete" --> Nurse[👩‍⚕️ Nurse Node]
+        Nurse -->|Logic: Identify Missing Data| Q_Gen[Generate Interview Q]
+        Q_Gen --> Response
+        
+        Router -- "Complete" --> Dietitian[👨‍⚕️ Dietitian Node]
+        Dietitian -->|Construct Query + Context| Retrieval_Call
+    end
+
+    %% ZONE 4: PROPRIETARY KNOWLEDGE
+    subgraph Zone4_Data [🔐 Zone 4: Proprietary Assets]
+        %% Patient Memory
+        Nurse <-->|Read/Write Profile| SQL[(Local SQL DB\nPatient Profiles)]
+        SQL -.->|Inject Medical Context\n(e.g. 'Has Diabetes')| Retrieval_Call
+        
+        %% Medical Knowledge
+        Retrieval_Call --> CLaRa_Engine[⚡ CLaRa Engine\n(Phi-4-mini + LoRA)]
+        CLaRa_Engine <-->|Continuous Latent Search| Vectors[[Compressed PDF Vectors]]
+        PDFs[Raw Medical PDFs] -->|Offline Compression| Vectors
+    end
+
+    %% RETURN PATH
+    CLaRa_Engine -->|Medical Evidence| Dietitian
+    Dietitian -->|Safe Advice| Response[Final Response]
+    Response --> WA
+
+    %% CLASS ASSIGNMENTS
+    class User,WA external;
+    class Webhook,Buffer,CleanInput server;
+    class Router,Nurse,Dietitian,Q_Gen,Response agent;
+    class SQL,CLaRa_Engine,Vectors,PDFs knowledge;
+
 
 ## Directory Structure
 
