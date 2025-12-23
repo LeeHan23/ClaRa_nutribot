@@ -28,60 +28,87 @@ NutriBot is a proprietary, agentic medical RAG system that acts as a Clinical Di
 ## Architecture
 ```mermaid
 graph TD
-    %% STYLING
-    classDef external fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5;
-    classDef server fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef agent fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef knowledge fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    %% Global Styles
+    classDef input fill:#fff,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef gateway fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
+    classDef logic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef data fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef term fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
 
-    %% ZONE 1: EXTERNAL INTERFACE
-    subgraph Zone1_Interaction [📱 Zone 1: Interaction Layer]
-        User((Patient)) -->|Sends multiple short texts| WA[WhatsApp / Twilio]
-        WA -->|Webhook POST| Webhook
-    end
-
-    %% ZONE 2: INGRESS & FLUIDITY
-    subgraph Zone2_Server [⚙️ Zone 2: The Gateway]
-        Webhook[Flask Server] -->|Raw Stream| Buffer
-        Buffer{Message Debouncer}
-        Buffer -- Wait 3s --> Buffer
-        Buffer -->|Timeout: Aggregate Texts| CleanInput[/"Merged User Query"/]
-    end
-
-    %% ZONE 3: COGNITIVE ORCHESTRATOR
-    subgraph Zone3_Agent [🧠 Zone 3: Agentic Brain - LangGraph]
-        CleanInput --> Router{Check Profile Status}
+    %% --- ZONE 1: INTERACTION ---
+    subgraph Z1 [Zone 1: Interaction Layer]
+        Patient(Patient) ::: input
+        WA[WhatsApp / Twilio] ::: input
+        Flask[Flask Server] ::: gateway
         
-        Router -- "Incomplete" --> Nurse[👩‍⚕️ Nurse Node]
-        Nurse -->|Logic: Identify Missing Data| Q_Gen[Generate Interview Q]
-        Q_Gen --> Response
-        
-        Router -- "Complete" --> Dietitian[👨‍⚕️ Dietitian Node]
-        Dietitian -->|Construct Query + Context| Retrieval_Call
+        Patient -->|Sends short texts| WA
+        WA -->|Webhook POST| Flask
     end
 
-    %% ZONE 4: PROPRIETARY KNOWLEDGE
-    subgraph Zone4_Data [🔐 Zone 4: Proprietary Assets]
-        %% Patient Memory
-        Nurse <-->|Read/Write Profile| SQL[(Local SQL DB\nPatient Profiles)]
-        SQL -.->|Inject Medical Context - e.g. Has Diabetes| Retrieval_Call
-        
-        %% Medical Knowledge
-        Retrieval_Call --> CLaRa_Engine[⚡ CLaRa Engine\nPhi-4-mini + LoRA]
-        CLaRa_Engine <-->|Continuous Latent Search| Vectors[[Compressed PDF Vectors]]
-        PDFs[Raw Medical PDFs] -->|Offline Compression| Vectors
+    %% --- ZONE 2: GATEWAY ---
+    subgraph Z2 [Zone 2: The Gateway]
+        Debounce{Message<br/>Debouncer} ::: gateway
+        Agg[Aggregate Texts<br/>Wait 3s] ::: gateway
+        Query[/Merged User Query/] ::: gateway
+
+        Flask -->|Raw Stream| Debounce
+        Debounce -->|Timeout| Agg
+        Agg --> Query
     end
 
-    %% RETURN PATH
-    CLaRa_Engine -->|Medical Evidence| Dietitian
-    Dietitian -->|Safe Advice| Response[Final Response]
-    Response --> WA
+    %% --- ZONE 3: AGENTIC BRAIN ---
+    subgraph Z3 [Zone 3: Agentic Brain - LangGraph]
+        Check{Profile Status?} ::: logic
+        
+        %% Path A: Incomplete Profile
+        Nurse[👩‍⚕️ Nurse Node] ::: logic
+        GenQ[Generate Interview Q] ::: logic
+        
+        %% Path B: Complete Profile
+        Retrieval[Retrieval Call] ::: term
+        Dietitian[🍎 Dietitian Node] ::: logic
+        
+        Final[Final Response] ::: term
 
-    %% CLASS ASSIGNMENTS
-    class User,WA external;
-    class Webhook,Buffer,CleanInput server;
-    class Router,Nurse,Dietitian,Q_Gen,Response agent;
-    class SQL,CLaRa_Engine,Vectors,PDFs knowledge;
+        Query --> Check
+        Check -->|Incomplete| Nurse
+        Nurse -->|Identify Missing Data| GenQ
+        GenQ --> Final
+        
+        Check -->|Complete| Retrieval
+        Retrieval -->|Context + Query| Dietitian
+        Dietitian -->|Safe Advice| Final
+    end
+
+    %% --- ZONE 4: PROPRIETARY DATA ---
+    subgraph Z4 [Zone 4: Data & Knowledge Engine]
+        direction TB
+        SQL[(Local SQL DB<br/>Patient Profiles)] ::: data
+        Context(Inject Medical Context<br/>e.g. Diabetes) ::: data
+        
+        PDF[Raw Medical PDFs] ::: data
+        Vector[Compressed PDF Vectors] ::: data
+        Engine[⚡ CLaRa Engine<br/>Phi-4-mini + LoRA] ::: data
+        
+        %% RAG Internal Flow
+        PDF -->|Offline Compression| Vector
+        Vector <--> Engine
+    end
+
+    %% --- CROSS-ZONE CONNECTIONS ---
+    
+    %% Nurse reads/writes to DB
+    Nurse <-->|Read/Write Profile| SQL
+    
+    %% DB injects context into RAG call
+    SQL -.-> Context
+    Context -.-> Retrieval
+    
+    %% RAG Engine feeds Retrieval
+    Engine <-->|Continuous Latent Search| Retrieval
+
+    %% Feedback Loop
+    Final -->|Send Message| WA
 ```
 
 ## Directory Structure
