@@ -26,8 +26,7 @@ NutriBot is a proprietary, agentic medical RAG system that acts as a Clinical Di
 - Profiling status tracking (IN_PROGRESS, COMPLETE)
 
 ## Architecture
-```
-mermaid
+```mermaid
 graph TD
     %% STYLING
     classDef external fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5;
