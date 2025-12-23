@@ -28,87 +28,79 @@ NutriBot is a proprietary, agentic medical RAG system that acts as a Clinical Di
 ## Architecture
 ```mermaid
 graph TD
-    %% Global Styles
-    classDef input fill:#fff,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5;
-    classDef gateway fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
-    classDef logic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef data fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
-    classDef term fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    %% --- NODE DEFINITIONS ---
+    Patient(Patient)
+    WA[WhatsApp / Twilio]
+    Flask[Flask Server]
+    Debounce{Message Debouncer}
+    Agg[Aggregate Texts Wait 3s]
+    Query[/Merged User Query/]
+    Check{Profile Status?}
+    Nurse[👩‍⚕️ Nurse Node]
+    GenQ[Generate Interview Q]
+    Retrieval[Retrieval Call]
+    Dietitian[🍎 Dietitian Node]
+    Final[Final Response]
+    SQL[(Local SQL DB Patient Profiles)]
+    Context(Inject Medical Context)
+    PDF[Raw Medical PDFs]
+    Vector[Compressed PDF Vectors]
+    Engine[⚡ CLaRa Engine Phi-4-mini]
 
-    %% --- ZONE 1: INTERACTION ---
+    %% --- ZONE 1: INTERACTION LAYER ---
     subgraph Z1 [Zone 1: Interaction Layer]
-        Patient(Patient) ::: input
-        WA[WhatsApp / Twilio] ::: input
-        Flask[Flask Server] ::: gateway
-        
         Patient -->|Sends short texts| WA
         WA -->|Webhook POST| Flask
     end
 
-    %% --- ZONE 2: GATEWAY ---
+    %% --- ZONE 2: THE GATEWAY ---
     subgraph Z2 [Zone 2: The Gateway]
-        Debounce{Message<br/>Debouncer} ::: gateway
-        Agg[Aggregate Texts<br/>Wait 3s] ::: gateway
-        Query[/Merged User Query/] ::: gateway
-
         Flask -->|Raw Stream| Debounce
         Debounce -->|Timeout| Agg
         Agg --> Query
     end
 
     %% --- ZONE 3: AGENTIC BRAIN ---
-    subgraph Z3 [Zone 3: Agentic Brain - LangGraph]
-        Check{Profile Status?} ::: logic
+    subgraph Z3 [Zone 3: Agentic Brain]
+        Query --> Check
         
         %% Path A: Incomplete Profile
-        Nurse[👩‍⚕️ Nurse Node] ::: logic
-        GenQ[Generate Interview Q] ::: logic
-        
-        %% Path B: Complete Profile
-        Retrieval[Retrieval Call] ::: term
-        Dietitian[🍎 Dietitian Node] ::: logic
-        
-        Final[Final Response] ::: term
-
-        Query --> Check
         Check -->|Incomplete| Nurse
         Nurse -->|Identify Missing Data| GenQ
         GenQ --> Final
         
+        %% Path B: Complete Profile
         Check -->|Complete| Retrieval
         Retrieval -->|Context + Query| Dietitian
         Dietitian -->|Safe Advice| Final
     end
 
-    %% --- ZONE 4: PROPRIETARY DATA ---
-    subgraph Z4 [Zone 4: Data & Knowledge Engine]
+    %% --- ZONE 4: DATA ENGINE ---
+    subgraph Z4 [Zone 4: Data Engine]
         direction TB
-        SQL[(Local SQL DB<br/>Patient Profiles)] ::: data
-        Context(Inject Medical Context<br/>e.g. Diabetes) ::: data
-        
-        PDF[Raw Medical PDFs] ::: data
-        Vector[Compressed PDF Vectors] ::: data
-        Engine[⚡ CLaRa Engine<br/>Phi-4-mini + LoRA] ::: data
-        
-        %% RAG Internal Flow
         PDF -->|Offline Compression| Vector
         Vector <--> Engine
+        SQL -.-> Context
     end
 
-    %% --- CROSS-ZONE CONNECTIONS ---
-    
-    %% Nurse reads/writes to DB
+    %% --- CROSS CONNECTIONS ---
     Nurse <-->|Read/Write Profile| SQL
-    
-    %% DB injects context into RAG call
-    SQL -.-> Context
     Context -.-> Retrieval
-    
-    %% RAG Engine feeds Retrieval
     Engine <-->|Continuous Latent Search| Retrieval
-
-    %% Feedback Loop
     Final -->|Send Message| WA
+
+    %% --- STYLING (Safe Mode) ---
+    classDef input fill:#fff,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    classDef gateway fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef logic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef data fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef term fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+
+    class Patient,WA input
+    class Flask,Debounce,Agg,Query gateway
+    class Check,Nurse,GenQ,Dietitian logic
+    class SQL,Context,PDF,Vector,Engine data
+    class Retrieval,Final term
 ```
 
 ## Directory Structure
