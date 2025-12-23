@@ -64,10 +64,10 @@ graph TD
     subgraph Zone4_Data [🔐 Zone 4: Proprietary Assets]
         %% Patient Memory
         Nurse <-->|Read/Write Profile| SQL[(Local SQL DB\nPatient Profiles)]
-        SQL -.->|Inject Medical Context\n(e.g. 'Has Diabetes')| Retrieval_Call
+        SQL -.->|Inject Medical Context - e.g. Has Diabetes| Retrieval_Call
         
         %% Medical Knowledge
-        Retrieval_Call --> CLaRa_Engine[⚡ CLaRa Engine\n(Phi-4-mini + LoRA)]
+        Retrieval_Call --> CLaRa_Engine[⚡ CLaRa Engine\nPhi-4-mini + LoRA]
         CLaRa_Engine <-->|Continuous Latent Search| Vectors[[Compressed PDF Vectors]]
         PDFs[Raw Medical PDFs] -->|Offline Compression| Vectors
     end
