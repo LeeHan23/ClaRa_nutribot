@@ -44,8 +44,8 @@ graph TD
     SQL[(Local SQL DB Patient Profiles)]
     Context(Inject Medical Context)
     PDF[Raw Medical PDFs]
-    Vector[Compressed PDF Vectors]
-    Engine[⚡ CLaRa Engine Phi-4-mini]
+    Vector[Standard Vector Store]
+    Engine[⚡ Custom LoRA Adapter (GPT-2)]
 
     %% --- ZONE 1: INTERACTION LAYER ---
     subgraph Z1 [Zone 1: Interaction Layer]
@@ -76,17 +76,22 @@ graph TD
     end
 
     %% --- ZONE 4: DATA ENGINE ---
-    subgraph Z4 [Zone 4: Data Engine]
+    subgraph Z4 [Zone 4: Knowledge System]
         direction TB
-        PDF -->|Offline Compression| Vector
-        Vector <--> Engine
+        PDF -->|Chunk & Embed| Vector
+        Vector -.->|Retrieve Guidelines| Retrieval
+        Engine -.->|Reasoning & Tone| Retrieval
         SQL -.-> Context
     end
 
     %% --- CROSS CONNECTIONS ---
     Nurse <-->|Read/Write Profile| SQL
     Context -.-> Retrieval
-    Engine <-->|Continuous Latent Search| Retrieval
+    
+    %% Critical Flow Update: Retrieval uses Engine
+    Retrieval -- "Prompt (Query + Context)" --> Engine
+    Engine -- "Generated Answer" --> Retrieval
+
     Final -->|Send Message| WA
 
     %% --- STYLING (Safe Mode) ---
