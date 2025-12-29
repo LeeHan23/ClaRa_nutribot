@@ -36,16 +36,16 @@ graph TD
     Agg[Aggregate Texts Wait 3s]
     Query[/Merged User Query/]
     Check{Profile Status?}
-    Nurse[👩‍⚕️ Nurse Node]
+    Nurse["👩‍⚕️ Nurse Node"]
     GenQ[Generate Interview Q]
     Retrieval[Retrieval Call]
-    Dietitian[🍎 Dietitian Node]
+    Dietitian["🍎 Dietitian Node"]
     Final[Final Response]
-    SQL[(Local SQL DB Patient Profiles)]
+    SQL[("Local SQL DB Patient Profiles")]
     Context(Inject Medical Context)
     PDF[Raw Medical PDFs]
     Vector[Standard Vector Store]
-    Engine[⚡ Custom LoRA Adapter (GPT-2)]
+    Engine["⚡ Custom LoRA Adapter (GPT-2)"]
 
     %% --- ZONE 1: INTERACTION LAYER ---
     subgraph Z1 [Zone 1: Interaction Layer]
